@@ -9,6 +9,7 @@ import dotenv from "dotenv";
 import connectDB from "./config/db";
 import PromptRouter from "./routes/promptRouter";
 import AuthRouter from "./routes/authRouter";
+import { ImageRouter } from "./routes/uploadRouter";
 
 const app = express();
 dotenv.config();
@@ -38,6 +39,9 @@ app.use("/api/prompt", PromptRouter);
 
 //auth routes
 app.use("/api/auth", AuthRouter);
+
+//upload routes
+app.use("/api", ImageRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on ${PORT}`);

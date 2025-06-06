@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { generateRandomPrompt } from "../utils/genPrompt";
-import { AuthRequest } from "../middleware/authMiddleware";
+import { AuthRequest } from "../middlewares/authMiddleware";
 import Prompt from "../models/prompt.schema";
 import { polishPrompt } from "../utils/polishPrompt";
 

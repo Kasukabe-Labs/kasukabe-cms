@@ -3,7 +3,7 @@ import {
   generateRandomPromptController,
   polishPromptController,
 } from "../controllers/promptController";
-import { authMiddleware } from "../middleware/authMiddleware";
+import { authMiddleware } from "../middlewares/authMiddleware";
 
 const PromptRouter = Router();
 

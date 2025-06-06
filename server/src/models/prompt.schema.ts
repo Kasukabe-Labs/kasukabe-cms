@@ -1,4 +1,4 @@
-import { Schema, model, models } from "mongoose";
+import { Schema, model } from "mongoose";
 import { IPrompt } from "../types/prompt";
 
 const PromptSchema = new Schema<IPrompt>(
