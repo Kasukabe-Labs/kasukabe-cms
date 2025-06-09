@@ -1,26 +1,30 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
-export default function Home() {
+export default function HomePage() {
   const router = useRouter();
-  const authHandler = async () => {
-    try {
-      router.push(`http://localhost:8000/api/auth/google`);
-    } catch (error) {
-      console.error("Error during authentication:", error);
-      throw new Error("Authentication failed");
+
+  const handleGetStarted = () => {
+    const loggedIn = localStorage.getItem("loggedIn");
+    if (loggedIn === "true") {
+      router.push("/dashboard");
+    } else {
+      router.push("/login");
     }
   };
+
   return (
-    <div className="min-h-screen w-full flex items-center justify-center flex-col">
-      <h1 className="text-3xl font-bold mb-4">Welcome to Kasukabe CMS</h1>
-      <button
-        onClick={authHandler}
-        className="bg-blue-600 textwhite px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-      >
-        login with google
-      </button>
+    <div className="min-h-screen w-full justify-center items-center flex flex-col">
+      <div className="space-y-4 text-left px-4">
+        <h1 className="text-5xl font-bold text-primary">AI Powered CMS</h1>
+        <p className="text-muted-foreground max-w-xl mt-2">
+          Generate random prompts, polish your content with AI, and manage your
+          images all in one place.
+        </p>
+        <Button onClick={handleGetStarted}>Get Started</Button>
+      </div>
     </div>
   );
 }
