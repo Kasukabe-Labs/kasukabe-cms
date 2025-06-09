@@ -24,7 +24,7 @@ export default function Navbar() {
   };
 
   return (
-    <header className="border-b w-full top-0 absolute z-10">
+    <header className="border-b w-full">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <Link href="/" className="text-xl font-bold flex items-center gap-2">
           <img src="/logo.png" alt="Logo" className="h-7 w-7" />
