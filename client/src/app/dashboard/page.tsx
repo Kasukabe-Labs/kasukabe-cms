@@ -76,6 +76,9 @@ export default function DashboardPage() {
   >(null);
   const [deletingPromptId, setDeletingPromptId] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [manualColor, setManualColor] = useState("");
+  const [isFetchingPalette, setIsFetchingPalette] = useState(false);
 
   const backendUrl = "https://kasukabe-cms-prod.onrender.com";
 
@@ -152,6 +155,7 @@ export default function DashboardPage() {
         body: JSON.stringify({
           rawPrompt,
           componentType: selectedComponentType,
+          colors: selectedColors.length > 0 ? selectedColors : undefined,
         }),
       });
 
@@ -273,6 +277,99 @@ export default function DashboardPage() {
     toast.info("Text copied to clipboard!");
   };
 
+  const fetchColorPalette = async () => {
+    setIsFetchingPalette(true);
+
+    // Generate a random hex color
+    const randomHex = Math.floor(Math.random() * 0xffffff)
+      .toString(16)
+      .padStart(6, "0")
+      .toUpperCase();
+
+    // Choose a random mode
+    const modes = [
+      "monochrome",
+      "monochrome-dark",
+      "monochrome-light",
+      "analogic",
+      "complement",
+      "analogic-complement",
+      "triad",
+      "quad",
+    ];
+    const randomMode = modes[Math.floor(Math.random() * modes.length)];
+
+    try {
+      const response = await fetch(
+        `https://www.thecolorapi.com/scheme?hex=${randomHex}&mode=${randomMode}&count=5`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch color palette");
+      }
+      const data = await response.json();
+      const colors = data.colors.map((color: any) => color.hex.value);
+      setSelectedColors(colors);
+      toast.success("Random color palette fetched successfully!");
+    } catch (error) {
+      const fallbackColors = [
+        "#FF6B6B",
+        "#4ECDC4",
+        "#45B7D1",
+        "#96CEB4",
+        "#FECA57",
+        "#FF6B6B",
+        "#FFE66D",
+        "#6A0572",
+        "#D9BF77",
+        "#D83367",
+        "#F7B7A3",
+        "#F8B400",
+        "#FF6B6B",
+        "#4ECDC4",
+        "#45B7D1",
+        "#96CEB4",
+        "#FECA57",
+      ];
+      setSelectedColors(fallbackColors);
+      toast.info("Using fallback color palette");
+    } finally {
+      setIsFetchingPalette(false);
+    }
+  };
+
+  const addManualColor = () => {
+    if (!manualColor.trim()) {
+      toast.error("Please enter a valid hex color");
+      return;
+    }
+
+    // Validate hex color format
+    const hexRegex = /^#?([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+    if (!hexRegex.test(manualColor)) {
+      toast.error("Please enter a valid hex color (e.g., #FF6B6B)");
+      return;
+    }
+
+    const formattedColor = manualColor.startsWith("#")
+      ? manualColor
+      : `#${manualColor}`;
+
+    if (selectedColors.includes(formattedColor)) {
+      toast.warning("Color already added");
+      return;
+    }
+
+    setSelectedColors((prev) => [...prev, formattedColor]);
+    setManualColor("");
+    toast.success("Color added successfully!");
+  };
+
+  const removeColor = (colorToRemove: string) => {
+    setSelectedColors((prev) =>
+      prev.filter((color) => color !== colorToRemove)
+    );
+  };
+
   const PromptCard = ({
     prompt,
     index,
@@ -389,6 +486,87 @@ export default function DashboardPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </CardContent>
+            </Card>
+
+            {/* Color Palette Picker */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-gradient-to-r from-red-500 to-blue-500 rounded"></div>
+                  Color Palette
+                </CardTitle>
+                <CardDescription>
+                  Fetch colors from Coolors or add custom hex colors for your
+                  design
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Fetch Palette Button */}
+                <Button
+                  onClick={fetchColorPalette}
+                  disabled={isFetchingPalette}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {isFetchingPalette ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Fetching Palette...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Fetch Random Palette
+                    </>
+                  )}
+                </Button>
+
+                {/* Manual Color Input */}
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Enter hex color (e.g., #FF6B6B)"
+                      value={manualColor}
+                      onChange={(e) => setManualColor(e.target.value)}
+                      onKeyPress={(e) => e.key === "Enter" && addManualColor()}
+                    />
+                  </div>
+                  <Button
+                    onClick={addManualColor}
+                    disabled={!manualColor.trim()}
+                    size="sm"
+                  >
+                    Add
+                  </Button>
+                </div>
+
+                {/* Selected Colors Display */}
+                {selectedColors.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Selected Colors ({selectedColors.length})</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedColors.map((color, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-1 bg-secondary rounded-full px-2 py-1"
+                        >
+                          <div
+                            className="w-4 h-4 rounded-full border"
+                            style={{ backgroundColor: color }}
+                          ></div>
+                          <span className="text-xs font-mono">{color}</span>
+                          <button
+                            onClick={() => removeColor(color)}
+                            className="text-xs hover:text-destructive ml-1"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
