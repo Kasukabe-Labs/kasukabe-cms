@@ -43,37 +43,116 @@ export const polishPrompt = async (
       : "";
 
   const polishingInstruction = `
-You are a prompt engineering expert trained to generate highly specific and optimized prompts for modern SaaS-style web UI designs.
+
+You are a prompt engineering assistant trained to convert short, raw one-liner prompts into detailed, vivid, structured design briefs for generating high-quality SaaS-style UI mockups.
 
 
 
-Component Type: ${componentType}
-Specific Guidelines: ${specificInstruction}
-${colorInstruction}
+Your job is to polish the following raw user prompt into a **comprehensive and specific visual design brief** that could be used by an AI image generator or a UI designer to create a modern, professional mockup.
 
-Your goal is to rewrite the raw prompt into a polished and effective instruction for generating modern SaaS-style web UI designs based on the following visual references:
 
-— Think clean, minimal, professional UI/UX like award-winning SaaS tools
-— Use modern web design principles: neumorphism, glassmorphism, or clean flat design
-— Include design elements appropriate for ${componentType}
-— Use subtle shadows, rounded corners, clean typography, and spacious layout
-— Color themes can be light or dark depending on tone, but always premium
+
+---
+
+
+
+✳️ Component Type: **${componentType}**
+
+
+
+🧠 Component-Specific Design Instructions:
+
+${specificInstruction}
+
+
+
+🎨 ${colorInstruction ? colorInstruction : ""}
+
+
+
+---
+
+
+
+✍️ Transform the prompt using this structure:
+
+
+
+1. **🧩 Layout & Structure**
+
+- Describe the structure: grid system, sidebar, center content, spacing between elements, header/footer presence, etc.
+
+
+
+2. **📦 Key Components**
+
+- List the major UI elements to include, such as charts, sidebars, cards, tables, filters, forms, navbars, etc.
+
+
+
+3. **🎨 Color Scheme**
+
+- Suggest colors for background, primary UI accents, typography, and button styles.
+
 ${
-  colors && colors.length > 0
-    ? `— IMPORTANT: Use the provided color palette: ${colors.join(", ")}`
+  colors?.length
+    ? `Use this color palette throughout: ${colors.join(", ")}`
     : ""
 }
-— Output format must be **16:9 landscape**
-— No placeholder text like [NAME] or [YOUR LOGO]
-— Be concise but rich in visual detail
-— Never mention that this is a prompt; just output the final refined prompt
-— Focus specifically on ${componentType} requirements and best practices
 
-Always ensure the prompt is written to generate results similar to clean SaaS UI mockups found on sites like Dribbble, Behance, or Awwwards.
 
-Raw prompt: "${rawPrompt}"
 
-Only output the refined prompt with no extra commentary.`;
+4. **🅰 Typography**
+
+- Specify font style (e.g., Inter, SF Pro, Satoshi), and sizes for headline, subtext, buttons.
+
+
+
+5. **⚡️ Interactions & CTA**
+
+- Describe primary CTAs, button placement, hover styles, spacing.
+
+
+
+6. **🌌 Visual Style & Effects**
+
+- Mention shadows, rounded corners, glassmorphism, neumorphism, or flat modernism. Keep the tone premium and elegant.
+
+
+
+7. **💡 Overall Vibe**
+
+- Describe how it should feel — clean, intelligent, futuristic, focused, minimal. Name similar apps (e.g., Linear, Superhuman, Vercel, Notion).
+
+
+
+---
+
+
+
+🛑 DO NOT say "this is a prompt" — just output the final polished design brief.
+
+✅ Be creative, highly visual, and detailed.
+
+✅ Format must describe a **16:9 landscape** web layout.
+
+🧠 Write like a senior product designer giving mockup instructions.
+
+
+
+---
+
+
+
+User's raw prompt:
+
+"${rawPrompt}"
+
+
+
+Now generate the full polished prompt.
+
+`;
 
   const response = await genAI.models.generateContent({
     model: "gemini-2.0-flash",
