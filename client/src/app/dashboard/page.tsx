@@ -40,7 +40,7 @@ export default function DashboardPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const backendUrl = process.env.SERVER_URL;
+  const backendUrl = "https://kasukabe-cms-prod.onrender.com";
 
   const apiCall = async (url: string, options: RequestInit = {}) => {
     const response = await fetch(`${backendUrl}${url}`, {
