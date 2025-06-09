@@ -16,7 +16,15 @@ export const generateRandomPromptController = async (
       });
     }
 
-    const randomPrompt = generateRandomPrompt();
+    const { componentType } = req.body;
+
+    if (!componentType || typeof componentType !== "string") {
+      return res.status(400).json({
+        message: "Component type is required",
+      });
+    }
+
+    const randomPrompt = generateRandomPrompt(componentType);
     if (!randomPrompt) {
       return res.status(404).json({ message: "No prompts available" });
     }
@@ -24,6 +32,7 @@ export const generateRandomPromptController = async (
     const newPrompt = new Prompt({
       user: userId,
       rawPrompt: randomPrompt,
+      componentType: componentType,
       type: "random",
     });
 
@@ -46,13 +55,20 @@ export const polishPromptController = async (
         message: "Request body is missing or invalid",
       });
     }
-    const { rawPrompt } = req.body;
+    const { rawPrompt, componentType } = req.body;
 
     if (!rawPrompt || typeof rawPrompt !== "string") {
       return res.status(400).json({
         message: "Invalid prompt format",
       });
     }
+
+    if (!componentType || typeof componentType !== "string") {
+      return res.status(400).json({
+        message: "Component type is required",
+      });
+    }
+
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({
@@ -60,12 +76,13 @@ export const polishPromptController = async (
       });
     }
 
-    const polishedPrompt = await polishPrompt(rawPrompt);
+    const polishedPrompt = await polishPrompt(rawPrompt, componentType);
 
     const newPolishedPrompt = new Prompt({
       user: userId,
       rawPrompt,
       polishedPrompt: polishedPrompt,
+      componentType: componentType,
       type: "user",
     });
 
@@ -76,6 +93,49 @@ export const polishPromptController = async (
     });
   } catch (error) {
     console.log("Error in polishPromptController:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const deletePromptController = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        message: "Unauthorized access, user ID is missing",
+      });
+    }
+
+    const { promptId } = req.params;
+
+    if (!promptId) {
+      return res.status(400).json({
+        message: "Prompt ID is required",
+      });
+    }
+
+    const deletedPrompt = await Prompt.findOneAndDelete({
+      _id: promptId,
+      user: userId,
+    });
+
+    if (!deletedPrompt) {
+      return res.status(404).json({
+        message: "Prompt not found or you don't have permission to delete it",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Prompt deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting prompt:", error);
     return res.status(500).json({
       message: "Internal server error",
       error: error instanceof Error ? error.message : "Unknown error",

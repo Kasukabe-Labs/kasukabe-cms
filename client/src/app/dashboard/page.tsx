@@ -1,5 +1,3 @@
-/* eslint-disable */
-
 "use client";
 
 import { useState } from "react";
@@ -14,13 +12,21 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Sparkles, Wand2, Upload, Copy } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2, Sparkles, Wand2, Upload, Copy, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Prompt {
   _id: string;
   rawPrompt: string;
   polishedPrompt?: string;
+  componentType: string;
   type: "random" | "user";
   createdAt: string;
 }
@@ -31,13 +37,28 @@ interface Image {
   createdAt: string;
 }
 
+const componentOptions = [
+  { value: "landing-page", label: "Landing Page" },
+  { value: "dashboard", label: "Dashboard" },
+  { value: "features-section", label: "Features Section" },
+  { value: "pricing-page", label: "Pricing Page" },
+  { value: "contact-form", label: "Contact Form" },
+  { value: "navigation", label: "Navigation" },
+  { value: "hero-section", label: "Hero Section" },
+  { value: "card-layout", label: "Card Layout" },
+  { value: "login-signup", label: "Login/Signup" },
+  { value: "footer", label: "Footer" },
+];
+
 export default function DashboardPage() {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [images, setImages] = useState<Image[]>([]);
   const [rawPrompt, setRawPrompt] = useState("");
+  const [selectedComponentType, setSelectedComponentType] = useState("");
   const [isPolishing, setIsPolishing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [deletingPromptId, setDeletingPromptId] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const backendUrl = "https://kasukabe-cms-prod.onrender.com";
@@ -60,9 +81,17 @@ export default function DashboardPage() {
   };
 
   const generateRandomPrompt = async () => {
+    if (!selectedComponentType) {
+      toast.error("Please select a component type first");
+      return;
+    }
+
     setIsGenerating(true);
     try {
-      const data = await apiCall("/api/prompt/random", { method: "POST" });
+      const data = await apiCall("/api/prompt/random", {
+        method: "POST",
+        body: JSON.stringify({ componentType: selectedComponentType }),
+      });
       setPrompts((prev) => [data.data, ...prev]);
       toast.success("Random prompt generated successfully!");
     } catch (error) {
@@ -78,11 +107,19 @@ export default function DashboardPage() {
       return;
     }
 
+    if (!selectedComponentType) {
+      toast.error("Please select a component type first");
+      return;
+    }
+
     setIsPolishing(true);
     try {
       const data = await apiCall("/api/prompt/polish", {
         method: "POST",
-        body: JSON.stringify({ rawPrompt }),
+        body: JSON.stringify({
+          rawPrompt,
+          componentType: selectedComponentType,
+        }),
       });
       setPrompts((prev) => [data.data, ...prev]);
       setRawPrompt("");
@@ -91,6 +128,21 @@ export default function DashboardPage() {
       toast.error("Failed to polish prompt");
     } finally {
       setIsPolishing(false);
+    }
+  };
+
+  const deletePrompt = async (promptId: string) => {
+    setDeletingPromptId(promptId);
+    try {
+      await apiCall(`/api/prompt/${promptId}`, {
+        method: "DELETE",
+      });
+      setPrompts((prev) => prev.filter((prompt) => prompt._id !== promptId));
+      toast.success("Prompt deleted successfully!");
+    } catch (error) {
+      toast.error("Failed to delete prompt");
+    } finally {
+      setDeletingPromptId(null);
     }
   };
 
@@ -155,6 +207,33 @@ export default function DashboardPage() {
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Actions */}
           <div className="space-y-6">
+            {/* Component Type Selection */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Select UI Component Type</CardTitle>
+                <CardDescription>
+                  Choose what type of UI component you want to generate
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Select
+                  value={selectedComponentType}
+                  onValueChange={setSelectedComponentType}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a component type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {componentOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+
             {/* Random Prompt Generator */}
             <Card>
               <CardHeader>
@@ -163,13 +242,14 @@ export default function DashboardPage() {
                   Generate Random Prompt
                 </CardTitle>
                 <CardDescription>
-                  Get instant creative inspiration with AI-generated prompts
+                  Get instant creative inspiration with AI-generated prompts for
+                  your selected component
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Button
                   onClick={generateRandomPrompt}
-                  disabled={isGenerating}
+                  disabled={isGenerating || !selectedComponentType}
                   className="w-full"
                 >
                   {isGenerating ? (
@@ -196,6 +276,7 @@ export default function DashboardPage() {
                 </CardTitle>
                 <CardDescription>
                   Transform your raw ideas into polished, professional content
+                  for your selected component
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -211,7 +292,9 @@ export default function DashboardPage() {
                 </div>
                 <Button
                   onClick={polishPrompt}
-                  disabled={isPolishing || !rawPrompt.trim()}
+                  disabled={
+                    isPolishing || !rawPrompt.trim() || !selectedComponentType
+                  }
                   className="w-full"
                 >
                   {isPolishing ? (
@@ -300,20 +383,44 @@ export default function DashboardPage() {
                       className="border rounded-lg p-4 space-y-3"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs bg-secondary px-2 py-1 rounded">
-                          {prompt.type === "random" ? "Generated" : "Polished"}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            copyToClipboard(
-                              prompt.polishedPrompt || prompt.rawPrompt
-                            )
-                          }
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs bg-secondary px-2 py-1 rounded">
+                            {prompt.type === "random"
+                              ? "Generated"
+                              : "Polished"}
+                          </span>
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                            {componentOptions.find(
+                              (opt) => opt.value === prompt.componentType
+                            )?.label || prompt.componentType}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() =>
+                              copyToClipboard(
+                                prompt.polishedPrompt || prompt.rawPrompt
+                              )
+                            }
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => deletePrompt(prompt._id)}
+                            disabled={deletingPromptId === prompt._id}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            {deletingPromptId === prompt._id ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
                       <div className="space-y-4">
                         <div>
