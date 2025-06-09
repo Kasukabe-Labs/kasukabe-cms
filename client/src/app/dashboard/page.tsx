@@ -1,8 +1,6 @@
-/* eslint-disable */
-
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,16 +19,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Sparkles, Wand2, Upload, Copy, Trash2 } from "lucide-react";
+import {
+  Loader2,
+  Sparkles,
+  Wand2,
+  Upload,
+  Copy,
+  Trash2,
+  Bookmark,
+  BookmarkCheck,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface Prompt {
-  _id: string;
+  _id?: string;
   rawPrompt: string;
   polishedPrompt?: string;
   componentType: string;
   type: "random" | "user";
-  createdAt: string;
+  createdAt: string | Date;
+  isBookmarked?: boolean;
 }
 
 interface Image {
@@ -53,13 +61,17 @@ const componentOptions = [
 ];
 
 export default function DashboardPage() {
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [currentPrompts, setCurrentPrompts] = useState<Prompt[]>([]);
+  const [bookmarkedPrompts, setBookmarkedPrompts] = useState<Prompt[]>([]);
   const [images, setImages] = useState<Image[]>([]);
   const [rawPrompt, setRawPrompt] = useState("");
   const [selectedComponentType, setSelectedComponentType] = useState("");
   const [isPolishing, setIsPolishing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [bookmarkingPromptIndex, setBookmarkingPromptIndex] = useState<
+    number | null
+  >(null);
   const [deletingPromptId, setDeletingPromptId] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -82,6 +94,20 @@ export default function DashboardPage() {
     return response.json();
   };
 
+  // Fetch bookmarked prompts on component mount
+  useEffect(() => {
+    fetchBookmarkedPrompts();
+  }, []);
+
+  const fetchBookmarkedPrompts = async () => {
+    try {
+      const data = await apiCall("/api/prompt/bookmarked");
+      setBookmarkedPrompts(data.data || []);
+    } catch (error) {
+      console.error("Failed to fetch bookmarked prompts:", error);
+    }
+  };
+
   const generateRandomPrompt = async () => {
     if (!selectedComponentType) {
       toast.error("Please select a component type first");
@@ -94,7 +120,10 @@ export default function DashboardPage() {
         method: "POST",
         body: JSON.stringify({ componentType: selectedComponentType }),
       });
-      setPrompts((prev) => [data.data, ...prev]);
+
+      // Add to current prompts (not saved to DB yet)
+      const newPrompt = { ...data.data, isBookmarked: false };
+      setCurrentPrompts((prev) => [newPrompt, ...prev]);
       toast.success("Random prompt generated successfully!");
     } catch (error) {
       toast.error("Failed to generate random prompt");
@@ -123,7 +152,10 @@ export default function DashboardPage() {
           componentType: selectedComponentType,
         }),
       });
-      setPrompts((prev) => [data.data, ...prev]);
+
+      // Add to current prompts (not saved to DB yet)
+      const newPrompt = { ...data.data, isBookmarked: false };
+      setCurrentPrompts((prev) => [newPrompt, ...prev]);
       setRawPrompt("");
       toast.success("Prompt polished successfully!");
     } catch (error) {
@@ -133,13 +165,61 @@ export default function DashboardPage() {
     }
   };
 
-  const deletePrompt = async (promptId: string) => {
+  const bookmarkPrompt = async (promptIndex: number) => {
+    const prompt = currentPrompts[promptIndex];
+    if (!prompt) return;
+
+    setBookmarkingPromptIndex(promptIndex);
+    try {
+      const data = await apiCall("/api/prompt/bookmark", {
+        method: "POST",
+        body: JSON.stringify({
+          rawPrompt: prompt.rawPrompt,
+          polishedPrompt: prompt.polishedPrompt,
+          componentType: prompt.componentType,
+          type: prompt.type,
+        }),
+      });
+
+      // Update current prompt as bookmarked
+      setCurrentPrompts((prev) =>
+        prev.map((p, i) =>
+          i === promptIndex
+            ? { ...p, isBookmarked: true, _id: data.data._id }
+            : p
+        )
+      );
+
+      // Add to bookmarked prompts
+      setBookmarkedPrompts((prev) => [data.data, ...prev]);
+
+      toast.success("Prompt bookmarked successfully!");
+    } catch (error) {
+      toast.error("Failed to bookmark prompt");
+    } finally {
+      setBookmarkingPromptIndex(null);
+    }
+  };
+
+  const deleteBookmarkedPrompt = async (promptId: string) => {
     setDeletingPromptId(promptId);
     try {
       await apiCall(`/api/prompt/${promptId}`, {
         method: "DELETE",
       });
-      setPrompts((prev) => prev.filter((prompt) => prompt._id !== promptId));
+
+      // Remove from bookmarked prompts
+      setBookmarkedPrompts((prev) =>
+        prev.filter((prompt) => prompt._id !== promptId)
+      );
+
+      // Update current prompts if it exists there
+      setCurrentPrompts((prev) =>
+        prev.map((p) =>
+          p._id === promptId ? { ...p, isBookmarked: false, _id: undefined } : p
+        )
+      );
+
       toast.success("Prompt deleted successfully!");
     } catch (error) {
       toast.error("Failed to delete prompt");
@@ -173,7 +253,6 @@ export default function DashboardPage() {
       setImages((prev) => [data.image, ...prev]);
       setSelectedFile(null);
 
-      // Reset file input
       const fileInput = document.getElementById(
         "image-upload"
       ) as HTMLInputElement;
@@ -192,15 +271,90 @@ export default function DashboardPage() {
     toast.info("Text copied to clipboard!");
   };
 
-  const handleLogout = () => {
-    localStorage.setItem("loggedIn", "false");
-    document.cookie.split(";").forEach((c) => {
-      document.cookie = c
-        .replace(/^ +/, "")
-        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-    });
-    window.location.href = "/";
-  };
+  const PromptCard = ({
+    prompt,
+    index,
+    isBookmarked = false,
+    onBookmark,
+    onDelete,
+  }: {
+    prompt: Prompt;
+    index: number;
+    isBookmarked?: boolean;
+    onBookmark?: (index: number) => void;
+    onDelete?: (id: string) => void;
+  }) => (
+    <div className="border rounded-lg p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xs bg-secondary px-2 py-1 rounded">
+            {prompt.type === "random" ? "Generated" : "Polished"}
+          </span>
+          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+            {componentOptions.find((opt) => opt.value === prompt.componentType)
+              ?.label || prompt.componentType}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() =>
+              copyToClipboard(prompt.polishedPrompt || prompt.rawPrompt)
+            }
+          >
+            <Copy className="h-3 w-3" />
+          </Button>
+
+          {!isBookmarked && onBookmark && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onBookmark(index)}
+              disabled={bookmarkingPromptIndex === index}
+              className="text-yellow-600 hover:text-yellow-700"
+            >
+              {bookmarkingPromptIndex === index ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : prompt.isBookmarked ? (
+                <BookmarkCheck className="h-3 w-3" />
+              ) : (
+                <Bookmark className="h-3 w-3" />
+              )}
+            </Button>
+          )}
+
+          {isBookmarked && onDelete && prompt._id && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onDelete(prompt._id!)}
+              disabled={deletingPromptId === prompt._id}
+              className="text-destructive hover:text-destructive"
+            >
+              {deletingPromptId === prompt._id ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Trash2 className="h-3 w-3" />
+              )}
+            </Button>
+          )}
+        </div>
+      </div>
+      <div className="space-y-4">
+        <div>
+          <p className="text-sm font-bold">Raw Prompt:</p>
+          <p className="text-sm">{prompt.rawPrompt}</p>
+        </div>
+        {prompt.polishedPrompt && (
+          <div>
+            <p className="text-sm font-bold">Polished Prompt:</p>
+            <p className="text-sm">{prompt.polishedPrompt}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen w-full flex justify-center items-center flex-col mt-20">
@@ -365,81 +519,55 @@ export default function DashboardPage() {
 
           {/* Results */}
           <div className="space-y-6">
-            {/* Recent Prompts */}
+            {/* Current Session Prompts */}
+            {currentPrompts.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Current Session Prompts</CardTitle>
+                  <CardDescription>
+                    Recently generated prompts (bookmark to save permanently)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {currentPrompts.slice(0, 3).map((prompt, index) => (
+                    <PromptCard
+                      key={index}
+                      prompt={prompt}
+                      index={index}
+                      onBookmark={bookmarkPrompt}
+                    />
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Bookmarked Prompts */}
             <Card>
               <CardHeader>
-                <CardTitle>Recent Prompts</CardTitle>
-                <CardDescription>
-                  Your latest generated and polished prompts
-                </CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <BookmarkCheck className="h-5 w-5" />
+                  Bookmarked Prompts
+                </CardTitle>
+                <CardDescription>Your saved prompts collection</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {prompts.length === 0 ? (
+                {bookmarkedPrompts.length === 0 ? (
                   <p className="text-muted-foreground text-center py-8">
-                    No prompts yet. Generate or polish a prompt to get started!
+                    No bookmarked prompts yet. Generate prompts and bookmark the
+                    ones you like!
                   </p>
                 ) : (
-                  prompts.slice(0, 5).map((prompt) => (
-                    <div
-                      key={prompt._id}
-                      className="border rounded-lg p-4 space-y-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs bg-secondary px-2 py-1 rounded">
-                            {prompt.type === "random"
-                              ? "Generated"
-                              : "Polished"}
-                          </span>
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                            {componentOptions.find(
-                              (opt) => opt.value === prompt.componentType
-                            )?.label || prompt.componentType}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() =>
-                              copyToClipboard(
-                                prompt.polishedPrompt || prompt.rawPrompt
-                              )
-                            }
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => deletePrompt(prompt._id)}
-                            disabled={deletingPromptId === prompt._id}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            {deletingPromptId === prompt._id ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-3 w-3" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm font-bold">Raw Prompt:</p>
-                          <p className="text-sm ">{prompt.rawPrompt}</p>
-                        </div>
-                        {prompt.polishedPrompt && (
-                          <div>
-                            <p className="text-sm font-bold">
-                              Polished Prompt:
-                            </p>
-                            <p className="text-sm">{prompt.polishedPrompt}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))
+                  bookmarkedPrompts
+                    .slice(0, 5)
+                    .map((prompt, index) => (
+                      <PromptCard
+                        key={prompt._id}
+                        prompt={prompt}
+                        index={index}
+                        isBookmarked={true}
+                        onDelete={deleteBookmarkedPrompt}
+                      />
+                    ))
                 )}
               </CardContent>
             </Card>

@@ -1,7 +1,9 @@
 import { Request, Response, Router } from "express";
 import {
+  bookmarkPromptController,
   deletePromptController,
   generateRandomPromptController,
+  getBookmarkedPromptsController,
   polishPromptController,
 } from "../controllers/promptController";
 import { authMiddleware } from "../middlewares/authMiddleware";
@@ -15,6 +17,22 @@ PromptRouter.post("/random", authMiddleware, (req: Request, res: Response) => {
 PromptRouter.post("/polish", authMiddleware, (req: Request, res: Response) => {
   polishPromptController(req, res);
 });
+
+PromptRouter.post(
+  "/bookmark",
+  authMiddleware,
+  (req: Request, res: Response) => {
+    bookmarkPromptController(req, res);
+  }
+);
+
+PromptRouter.get(
+  "/bookmarked",
+  authMiddleware,
+  (req: Request, res: Response) => {
+    getBookmarkedPromptsController(req, res);
+  }
+);
 
 PromptRouter.delete(
   "/:promptId",

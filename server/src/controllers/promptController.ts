@@ -29,16 +29,15 @@ export const generateRandomPromptController = async (
       return res.status(404).json({ message: "No prompts available" });
     }
 
-    const newPrompt = new Prompt({
-      user: userId,
+    // Just return the prompt data without saving to DB
+    const promptData = {
       rawPrompt: randomPrompt,
       componentType: componentType,
-      type: "random",
-    });
+      type: "random" as const,
+      createdAt: new Date(),
+    };
 
-    await newPrompt.save();
-
-    return res.status(200).json({ data: newPrompt });
+    return res.status(200).json({ data: promptData });
   } catch (error) {
     console.error("Error generating random prompt:", error);
     return res.status(500).json({ error: "Failed to generate random prompt" });
@@ -76,23 +75,106 @@ export const polishPromptController = async (
       });
     }
 
-    const polishedPrompt = await polishPrompt(rawPrompt, componentType);
+    const polishedPromptText = await polishPrompt(rawPrompt, componentType);
 
-    const newPolishedPrompt = new Prompt({
-      user: userId,
+    // Just return the polished prompt data without saving to DB
+    const promptData = {
       rawPrompt,
-      polishedPrompt: polishedPrompt,
+      polishedPrompt: polishedPromptText,
       componentType: componentType,
-      type: "user",
-    });
+      type: "user" as const,
+      createdAt: new Date(),
+    };
 
-    await newPolishedPrompt.save();
     return res.status(200).json({
-      data: newPolishedPrompt,
+      data: promptData,
       message: "Prompt polished successfully",
     });
   } catch (error) {
     console.log("Error in polishPromptController:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const bookmarkPromptController = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        message: "Unauthorized access, user ID is missing",
+      });
+    }
+
+    const { rawPrompt, polishedPrompt, componentType, type } = req.body;
+
+    if (!rawPrompt || typeof rawPrompt !== "string") {
+      return res.status(400).json({
+        message: "Raw prompt is required",
+      });
+    }
+
+    if (!componentType || typeof componentType !== "string") {
+      return res.status(400).json({
+        message: "Component type is required",
+      });
+    }
+
+    if (!type || (type !== "random" && type !== "user")) {
+      return res.status(400).json({
+        message: "Valid type is required",
+      });
+    }
+
+    const newBookmarkedPrompt = new Prompt({
+      user: userId,
+      rawPrompt,
+      polishedPrompt: polishedPrompt || undefined,
+      componentType: componentType,
+      type: type,
+    });
+
+    await newBookmarkedPrompt.save();
+
+    return res.status(200).json({
+      data: newBookmarkedPrompt,
+      message: "Prompt bookmarked successfully",
+    });
+  } catch (error) {
+    console.error("Error bookmarking prompt:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const getBookmarkedPromptsController = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        message: "Unauthorized access, user ID is missing",
+      });
+    }
+
+    const bookmarkedPrompts = await Prompt.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .limit(20);
+
+    return res.status(200).json({
+      data: bookmarkedPrompts,
+    });
+  } catch (error) {
+    console.error("Error fetching bookmarked prompts:", error);
     return res.status(500).json({
       message: "Internal server error",
       error: error instanceof Error ? error.message : "Unknown error",
