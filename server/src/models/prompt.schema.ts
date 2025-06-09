@@ -15,6 +15,22 @@ const PromptSchema = new Schema<IPrompt>(
     polishedPrompt: {
       type: String,
     },
+    componentType: {
+      type: String,
+      required: true,
+      enum: [
+        "landing-page",
+        "dashboard",
+        "features-section",
+        "pricing-page",
+        "contact-form",
+        "navigation",
+        "hero-section",
+        "card-layout",
+        "login-signup",
+        "footer",
+      ],
+    },
     user: {
       type: Schema.Types.ObjectId,
       ref: "User",
