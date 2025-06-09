@@ -470,7 +470,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            {/* Image Upload */}
+            {/* Image Upload
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -516,7 +516,7 @@ export default function DashboardPage() {
                   )}
                 </Button>
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
 
           {/* Results */}
@@ -575,7 +575,7 @@ export default function DashboardPage() {
             </Card>
 
             {/* Recent Images */}
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Recent Images</CardTitle>
                 <CardDescription>Your latest uploaded images</CardDescription>
@@ -599,7 +599,7 @@ export default function DashboardPage() {
                   </div>
                 )}
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
         </div>
       </main>
