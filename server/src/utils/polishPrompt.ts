@@ -1,12 +1,39 @@
 import { genAI } from "../config/googleGemini";
 import { formatReadableText } from "./formatReadbleText";
 
+const componentSpecificInstructions = {
+  "landing-page":
+    "Focus on hero sections, value propositions, social proof, and strong CTAs. Include header navigation, hero banner, features section, testimonials, and footer.",
+  dashboard:
+    "Emphasize data visualization, charts, metrics cards, navigation sidebar, and clean information hierarchy. Include analytics widgets and user-friendly controls.",
+  "features-section":
+    "Create feature grids with icons, benefit-focused copy, and visual hierarchy. Use cards or tiles with hover effects and clear value propositions.",
+  "pricing-page":
+    "Include pricing tiers, feature comparisons, popular badges, and clear CTAs. Make pricing transparent with toggle options for billing periods.",
+  "contact-form":
+    "Design user-friendly forms with proper validation, clear labels, and submission feedback. Include contact information and location if relevant.",
+  navigation:
+    "Create intuitive navigation with clear hierarchy, responsive design, and proper mobile experience. Include search and user account elements.",
+  "hero-section":
+    "Focus on compelling headlines, sub-headlines, CTAs, and background visuals. Make it conversion-focused with clear value proposition.",
+  "card-layout":
+    "Design clean card components with consistent spacing, hover effects, and clear content hierarchy. Ensure responsive grid layouts.",
+  "login-signup":
+    "Create secure, user-friendly authentication forms with social login options, password requirements, and clear error handling.",
+  footer:
+    "Include essential links, contact information, social media, newsletter signup, and legal links. Keep it organized and accessible.",
+};
+
 export const polishPrompt = async (
   rawPrompt: string,
   componentType: string,
   colors?: string[]
 ): Promise<string> => {
-  const specificInstruction = `Focus on creating a well-designed ${componentType} component with modern UI/UX principles.`;
+  const specificInstruction =
+    componentSpecificInstructions[
+      componentType as keyof typeof componentSpecificInstructions
+    ] ||
+    `Focus on creating a well-designed ${componentType} component with modern UI/UX principles.`;
 
   const colorInstruction =
     colors && colors.length > 0
