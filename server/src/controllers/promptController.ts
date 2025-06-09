@@ -54,7 +54,7 @@ export const polishPromptController = async (
         message: "Request body is missing or invalid",
       });
     }
-    const { rawPrompt, componentType } = req.body;
+    const { rawPrompt, componentType, colors } = req.body;
 
     if (!rawPrompt || typeof rawPrompt !== "string") {
       return res.status(400).json({
@@ -68,6 +68,17 @@ export const polishPromptController = async (
       });
     }
 
+    // Validate colors if provided
+    if (
+      colors &&
+      (!Array.isArray(colors) ||
+        !colors.every((color) => typeof color === "string"))
+    ) {
+      return res.status(400).json({
+        message: "Colors must be an array of strings",
+      });
+    }
+
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({
@@ -75,13 +86,18 @@ export const polishPromptController = async (
       });
     }
 
-    const polishedPromptText = await polishPrompt(rawPrompt, componentType);
+    const polishedPromptText = await polishPrompt(
+      rawPrompt,
+      componentType,
+      colors
+    );
 
     // Just return the polished prompt data without saving to DB
     const promptData = {
       rawPrompt,
       polishedPrompt: polishedPromptText,
       componentType: componentType,
+      colors: colors || [],
       type: "user" as const,
       createdAt: new Date(),
     };
