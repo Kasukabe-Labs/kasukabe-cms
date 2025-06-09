@@ -10,10 +10,12 @@ import {
 } from "@/components/ui/card";
 import { FcGoogle } from "react-icons/fc";
 
+const url = process.env.SERVER_URL;
+
 export default function LoginPage() {
   const handleGoogleLogin = () => {
     localStorage.setItem("loggedIn", "true");
-    window.location.href = "http://localhost:8000/api/auth/google";
+    window.location.href = url!;
   };
 
   return (

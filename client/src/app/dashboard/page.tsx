@@ -40,8 +40,10 @@ export default function DashboardPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  const backendUrl = process.env.SERVER_URL;
+
   const apiCall = async (url: string, options: RequestInit = {}) => {
-    const response = await fetch(`http://localhost:8000${url}`, {
+    const response = await fetch(`${backendUrl}${url}`, {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
@@ -103,7 +105,7 @@ export default function DashboardPage() {
       const formData = new FormData();
       formData.append("image", selectedFile);
 
-      const response = await fetch("http://localhost:8000/api/upload", {
+      const response = await fetch(`${backendUrl}/api/upload`, {
         method: "POST",
         credentials: "include",
         body: formData,

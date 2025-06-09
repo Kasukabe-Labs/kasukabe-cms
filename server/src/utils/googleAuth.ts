@@ -7,7 +7,8 @@ const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
   process.env.GOOGLE_REDIRECT_URI ||
-    "http://localhost:8000/api/auth/google/callback"
+    // "http://localhost:8000/api/auth/google/callback"
+    "https://kasukabe-cms-prod.onrender.com/api/auth/google/callback"
 );
 
 export const getGoogleAuthUrl = () => {
@@ -31,7 +32,8 @@ export const getGoogleUser = async (code: string) => {
     console.log(
       "Redirect URI:",
       process.env.GOOGLE_REDIRECT_URI ||
-        "http://localhost:8000/api/auth/google/callback"
+        "https://kasukabe-cms-prod.onrender.com/api/auth/google/callback"
+      // "http://localhost:8000/api/auth/google/callback"
     );
 
     // Exchange code for tokens
