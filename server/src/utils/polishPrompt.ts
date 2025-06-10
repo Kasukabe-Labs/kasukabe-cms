@@ -118,6 +118,9 @@ ${
 
 - Mention shadows, rounded corners, glassmorphism, neumorphism, or flat modernism. Keep the tone premium and elegant.
 
+— Output must be rendered as a 16:9 widescreen landscape image, suitable for web UI mockups. Use dimensions like 1600x900 pixels or equivalent.
+
+
 
 
 7. **💡 Overall Vibe**
@@ -134,7 +137,7 @@ ${
 
 ✅ Be creative, highly visual, and detailed.
 
-✅ Format must describe a **ASPECT RATIO should be always 16:9 landscape** web layout.
+✅ Format must describe a **16:9 landscape** web layout.
 
 🧠 Write like a senior product designer giving mockup instructions.
 
