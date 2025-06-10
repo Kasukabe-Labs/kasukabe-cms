@@ -134,7 +134,7 @@ ${
 
 ✅ Be creative, highly visual, and detailed.
 
-✅ Format must describe a **16:9 landscape** web layout.
+✅ Format must describe a **ASPECT RATIO should be always 16:9 landscape** web layout.
 
 🧠 Write like a senior product designer giving mockup instructions.
 
