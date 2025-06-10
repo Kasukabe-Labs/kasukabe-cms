@@ -116,9 +116,10 @@ ${
 
 6. **🌌 Visual Style & Effects**
 
-- Mention shadows, rounded corners, glassmorphism, neumorphism, or flat modernism. Keep the tone premium and elegant.
+— Visual layout must follow a 16:9 widescreen landscape aspect ratio (e.g., 1600x900 pixels), suitable for modern SaaS web UIs  
+— Maintain clean UI/UX design principles with generous spacing, visual breathing room, and minimal clutter  
+— The design should feel premium, polished, and highly usable — avoid dense or overcrowded elements
 
-— Output must be rendered as a 16:9 widescreen landscape image, suitable for web UI mockups. Use dimensions like 1600x900 pixels or equivalent.
 
 
 
