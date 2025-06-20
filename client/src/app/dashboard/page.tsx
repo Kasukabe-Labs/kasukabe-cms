@@ -80,7 +80,7 @@ export default function DashboardPage() {
   const [manualColor, setManualColor] = useState("");
   const [isFetchingPalette, setIsFetchingPalette] = useState(false);
 
-  const backendUrl = "https://kasukabe-cms-prod.onrender.com";
+  const backendUrl = process.env.SERVER_URL;
 
   const apiCall = async (url: string, options: RequestInit = {}) => {
     const response = await fetch(`${backendUrl}${url}`, {

@@ -10,11 +10,12 @@ import {
 } from "@/components/ui/card";
 import { FcGoogle } from "react-icons/fc";
 
+const backendUrl = process.env.SERVER_URL;
+
 export default function LoginPage() {
   const handleGoogleLogin = () => {
     localStorage.setItem("loggedIn", "true");
-    window.location.href =
-      "https://kasukabe-cms-prod.onrender.com/api/auth/google";
+    window.location.href = `${backendUrl}/api/auth/google`;
   };
 
   return (

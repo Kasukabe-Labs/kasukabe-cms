@@ -6,7 +6,7 @@ dotenv.config();
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  "https://kasukabe-cms-prod.onrender.com/api/auth/google/callback"
+  process.env.GOOGLE_REDIRECT_URI
 );
 
 export const getGoogleAuthUrl = () => {
@@ -27,12 +27,7 @@ export const getGoogleUser = async (code: string) => {
     console.log("🔍 Attempting to exchange code for tokens...");
     console.log("Code received:", code);
     console.log("Client ID:", process.env.GOOGLE_CLIENT_ID);
-    console.log(
-      "Redirect URI:",
-      process.env.GOOGLE_REDIRECT_URI ||
-        "https://kasukabe-cms-prod.onrender.com/api/auth/google/callback"
-      // "http://localhost:8000/api/auth/google/callback"
-    );
+    console.log("Redirect URI:", process.env.GOOGLE_REDIRECT_URI);
 
     // Exchange code for tokens
     const { tokens } = await oauth2Client.getToken({
