@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { FcGoogle } from "react-icons/fc";
 
-const backendUrl = process.env.SERVER_URL;
+const backendUrl = process.env.NEXT_PUBLIC_SERVER_URL;
 
 export default function LoginPage() {
   const handleGoogleLogin = () => {
